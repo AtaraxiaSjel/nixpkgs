@@ -158,6 +158,11 @@ in {
         default = {};
         description = mdDoc "Extra environment variables passed to webhook.";
       };
+      environmentFiles = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = mdDoc "Extra environment variables from files passed to webhook.";
+      };
     };
   };
 
@@ -201,7 +206,11 @@ in {
             ++ optional cfg.enableTemplates "-template"
             ++ optional cfg.verbose "-verbose"
             ++ cfg.extraArgs;
+        envFiles = concatMapStringsSep "\n" (envFile: "source " + envFile) cfg.environmentFiles;
       in ''
+        set -a
+        ${envFiles}
+        set +a
         ${cfg.package}/bin/webhook ${escapeShellArgs args}
       '';
       serviceConfig = {
