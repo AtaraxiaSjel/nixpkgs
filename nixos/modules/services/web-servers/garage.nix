@@ -100,7 +100,14 @@ in
         set -a
 
         # source the set environmentFile (since systemd EnvironmentFile is supposed to be a minor subset of posix sh parsing) (with shell arg escaping to avoid quoting issues)
-        [ -f ${lib.escapeShellArg cfg.environmentFile} ] && . ${lib.escapeShellArg cfg.environmentFile}
+        ${lib.optionalString (cfg.environmentFile != null) ''
+          [ -f ${lib.escapeShellArg cfg.environmentFile} ] && . ${lib.escapeShellArg cfg.environmentFile}
+        ''}
+
+        # export the extraEnvironment variables (with shell arg escaping to avoid quoting issues)
+        ${lib.concatStringsSep "\n" (
+          lib.mapAttrsToList (name: value: "export ${name}=${lib.escapeShellArg value};") cfg.extraEnvironment
+        )}
 
         # exec the program with quoted args (also with shell arg escaping for the program path to avoid quoting issues there)
         exec ${lib.escapeShellArg (lib.getExe cfg.package)} "$@"
